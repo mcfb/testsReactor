@@ -9,52 +9,43 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import java.util.List;
+
 public class AtmMachineTest {
 
     private CardProviderService cardProviderService;
     private MoneyDepot moneyDepot;
     private BankService bankService;
+    private AtmMachine atmMachine;
+    private Card card;
 
-
-    @Before
-    public void setUp() {
+    @Before public void setUp() {
         cardProviderService = Mockito.mock(CardProviderService.class);
         bankService = Mockito.mock(BankService.class);
         moneyDepot = Mockito.mock(MoneyDepot.class);
+
+        atmMachine = new AtmMachine(cardProviderService, bankService, moneyDepot);
+        card = Card.builder().withCardNumber("123456789").withPinNumber(1234).build();
     }
 
+    @Test(expected = WrongMoneyAmountException.class) public void shouldReturnWrongMoneyAmountExceptionIfWrongAmountMoneyGiven() {
 
-    @Test(expected = WrongMoneyAmountException.class)
-    public void shouldReturnWrongMoneyAmountExceptionIfWrongAmountMoneyGiven(){
-
-        AtmMachine atmMachine = new AtmMachine(cardProviderService, bankService, moneyDepot);
         Money money = Money.builder().withAmount(-10).withCurrency(Currency.PL).build();
-        Card card = Card.builder().withCardNumber("123456789").withPinNumber(1234).build();
         atmMachine.withdraw(money, card);
     }
 
+    @Test public void shouldReturnPaymentThreeBanknotes() {
 
-
-    @Test
-    public void shouldReturnPaymentThreeBanknotes(){
-
-        AtmMachine atmMachine = new AtmMachine(cardProviderService, bankService, moneyDepot);
         Money money = Money.builder().withAmount(80).withCurrency(Currency.PL).build();
-        Card card = Card.builder().withCardNumber("123456789").withPinNumber(1234).build();
         Payment result = atmMachine.withdraw(money, card);
 
         assertThat(result.getValue().size(), Matchers.equalTo(3));
 
     }
 
+    @Test(expected = AtmException.class) public void shouldThrowCardAuthorizeExceptionOnWrongAuthorization() {
 
-    @Test(expected = AtmException.class)
-    public void shouldThrowCardAuthorizeExceptionOnWrongAuthorization() {
-
-        AtmMachine atmMachine = new AtmMachine(cardProviderService, bankService, moneyDepot);
         Money money = Money.builder().withAmount(80).withCurrency(Currency.PL).build();
-        AuthenticationToken token = AuthenticationToken.builder().withAuthorizationCode(123).withUserId("abc").build();
-        Card card = Card.builder().withCardNumber("123456789").withPinNumber(1234).build();
 
         try {
             Mockito.when(cardProviderService.authorize(card)).thenThrow(CardAuthorizationException.class);
@@ -65,9 +56,22 @@ public class AtmMachineTest {
 
     }
 
+    @Test public void shouldReturnMoneyThatUserRequired() {
 
-    @Test
-    public void itCompiles() {
+        Money money = Money.builder().withAmount(120).withCurrency(Currency.PL).build();
+        Payment result = atmMachine.withdraw(money, card);
+
+        List<Banknote> listOfBanknotes = result.getValue();
+        int amountPaid = 0;
+        for (Banknote banknote : listOfBanknotes) {
+            amountPaid += banknote.getValue();
+        }
+
+        assertThat(amountPaid, Matchers.equalTo(120));
+
+    }
+
+    @Test public void itCompiles() {
         assertThat(true, equalTo(true));
     }
 
