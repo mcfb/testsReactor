@@ -71,6 +71,14 @@ public class AtmMachineTest {
 
     }
 
+    @Test(expected = WrongMoneyAmountException.class)
+    public void shouldThrowWrongMoneyAmountExceptionNoSuchBanknote() {
+
+        Money money = Money.builder().withAmount(8).withCurrency(Currency.PL).build();
+        atmMachine.withdraw(money, card);
+
+    }
+
     @Test public void itCompiles() {
         assertThat(true, equalTo(true));
     }
