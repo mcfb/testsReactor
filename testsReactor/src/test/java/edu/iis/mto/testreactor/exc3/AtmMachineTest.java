@@ -48,6 +48,24 @@ public class AtmMachineTest {
     }
 
 
+    @Test(expected = AtmException.class)
+    public void shouldThrowCardAuthorizeExceptionOnWrongAuthorization() {
+
+        AtmMachine atmMachine = new AtmMachine(cardProviderService, bankService, moneyDepot);
+        Money money = Money.builder().withAmount(80).withCurrency(Currency.PL).build();
+        AuthenticationToken token = AuthenticationToken.builder().withAuthorizationCode(123).withUserId("abc").build();
+        Card card = Card.builder().withCardNumber("123456789").withPinNumber(1234).build();
+
+        try {
+            Mockito.when(cardProviderService.authorize(card)).thenThrow(CardAuthorizationException.class);
+        } catch (CardAuthorizationException e) {
+            e.printStackTrace();
+        }
+        atmMachine.withdraw(money, card);
+
+    }
+
+
     @Test
     public void itCompiles() {
         assertThat(true, equalTo(true));
